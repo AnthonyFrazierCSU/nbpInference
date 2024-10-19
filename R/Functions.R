@@ -15,6 +15,8 @@
 #' X <- rnorm(1000, 0, 5)
 #' Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 #' make_pmatrix(Z, X)
+#' @import LinCDE
+#' @import RFCDE
 #' @export
 make_pmatrix <- function(Z, X, method = "linCDE"){
   if(method %in% c("linCDE", "RFCDE") == FALSE){
