@@ -8,8 +8,9 @@ Description: This package provides tools to conduct inference on the sample aver
   treatment. This package provides functions for calipered non-bipartite matching, 
   bias-corrected estimation of the sample average treatment effect and covariate-adjusted
   variance estimation.
-Imports: nbpMatching, RFCDE, earth, LinCDE
-License: use_mit_license()
+Imports: nbpMatching, RFCDE, LinCDE, stats
+Remotes: tpospisi/RFCDE/r, ZijunGao/LinCDE
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1

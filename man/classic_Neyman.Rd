@@ -27,6 +27,6 @@ X <- rnorm(1000, 0, 5)
 Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 Y <- X + Z + rnorm(1000, 0, 0.5)
 pmat <- make_pmatrix(Z, X)
-pairs <- nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
+pairs <- nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
 classic_Neyman(Y, Z, pairs)
 }

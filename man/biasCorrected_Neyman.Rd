@@ -19,7 +19,7 @@ off-diagonal elements (i, j) contain the probability the ith observation has
 Z = max{Z_i, Z_j} and the jth observation has Z = min{Z_i, Z_j}. We can create
 a p-matrix using the make_pmatrix function.}
 
-\item{xi}{a number in the range \link{0, 0.5}, the cutoff related to the treatment
+\item{xi}{a number in the range 0 to 0.5, the cutoff related to the treatment
 assignment probability caliper.}
 }
 \value{
@@ -35,6 +35,6 @@ X <- rnorm(1000, 0, 5)
 Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 Y <- X + Z + rnorm(1000, 0, 0.5)
 pmat <- make_pmatrix(Z, X)
-pairs <- nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
+pairs <- nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
 biasCorrected_Neyman(Y, Z, pairs, pmat, xi = 0.1)
 }

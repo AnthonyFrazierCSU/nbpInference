@@ -31,8 +31,8 @@ make_pmatrix <- function(Z, X, method = "linCDE"){
     propensity_matrix <- matrix(0, nrow = length(Z), ncol = length(Z))
     model <- LinCDE::LinCDE.boost(y = Z, X = X, terminalSize = 20, verbose = FALSE, centering = TRUE, centeringMethod = "linearRegression")
   
-    for(i in 1:nrow(propensity_matrix)){
-      propensity_matrix[i, ] <- predict(model, X = X[i, ], y = Z)
+    for(i in 1:length(Z)){
+      propensity_matrix[i, ] <- LinCDE::predict.LinCDE(model, X = X[i, ], y = Z)
     }
     
     for(i in 1:(length(Z)-1)){
@@ -50,19 +50,19 @@ make_pmatrix <- function(Z, X, method = "linCDE"){
   
   if(method == "RFCDE"){
     
-    model <- RFCDE(data[, 3:ncol(data)], data[, 1])
-    predicted <- predict(model, as.matrix(data[, 3:ncol(data)]), "CDE", data[, 1])
-    same_propensity_vector <- 1:nrow(data)
+    model <- RFCDE(X, Z)
+    predicted <- predict(model, as.matrix(X), "CDE", Z)
+    same_propensity_vector <- 1:length(Z)
     
-    for(i in 1:nrow(data)){
+    for(i in 1:length(Z)){
       same_propensity_vector[i] <- predicted[i, i]
     }
     
     observed_treatment_matrix <- same_propensity_vector %*% base::t(same_propensity_vector)
-    p_matrix <- matrix(0, nrow = nrow(data), ncol = nrow(data))
+    p_matrix <- matrix(0, nrow = nrow(X), ncol = nrow(X))
     
-    for(i in 1:(nrow(data)-1)){
-      for(j in (i+1):nrow(data)){
+    for(i in 1:(length(Z)-1)){
+      for(j in (i+1):length(Z)){
         
         opposing_treatment <- predicted[j, i] * predicted[i, j]
         p_observed <- observed_treatment_matrix[i, j] / (observed_treatment_matrix[i, j] + opposing_treatment)
@@ -88,7 +88,7 @@ make_pmatrix <- function(Z, X, method = "linCDE"){
 #' off-diagonal elements (i, j) contain the probability the ith observation has
 #' Z = max{Z_i, Z_j} and the jth observation has Z = min{Z_i, Z_j}. We can create
 #' a p-matrix using the make_pmatrix function.
-#' @param xi a number in the range [0, 0.5], the cutoff related to the treatment
+#' @param xi a number in the range 0 to 0.5, the cutoff related to the treatment
 #' assignment probability caliper.
 #' @param M an integer determining the penalty of the treatment assignment
 #' probability caliper. If a potential matched pair between observations i and j 
@@ -100,9 +100,9 @@ make_pmatrix <- function(Z, X, method = "linCDE"){
 #' X <- rnorm(1000, 0, 5)
 #' Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 #' pmat <- make_pmatrix(Z, X)
-#' nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
+#' nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
 #' @export
-nbp_caliper <- function(Z, X, pmat, xi, M){
+nbp_Caliper <- function(Z, X, pmat, xi, M){
   
   X <- data.frame(X)
   
@@ -123,13 +123,13 @@ nbp_caliper <- function(Z, X, pmat, xi, M){
   # making mahalanobis distance matrix
   
   Matching_data <- cbind(Z, X)
-  test.dist <- gendistance(Matching_data, idcol = 1)
-  test.mdm <- distancematrix(test.dist)
+  test.dist <- nbpMatching::gendistance(Matching_data, idcol = 1)
+  test.mdm <- nbpMatching::distancematrix(test.dist)
   
   # applying caliper to mahalnobis distance matrix
   
-  caliper_dist_matrix <- distancematrix(test.mdm + caliper_matrix)
-  test.match <- nonbimatch(caliper_dist_matrix)
+  caliper_dist_matrix <- nbpMatching::distancematrix(test.mdm + caliper_matrix)
+  test.match <- nbpMatching::nonbimatch(caliper_dist_matrix)
   matches <- test.match$matches
   matches$group <- ifelse(as.numeric(matches$Group1.ID) < as.numeric(matches$Group2.ID), "L", "H")
   high_groups <- matches[which(matches$group == "H"), 2]
@@ -160,7 +160,7 @@ nbp_caliper <- function(Z, X, pmat, xi, M){
 #' Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 #' Y <- X + Z + rnorm(1000, 0, 0.5)
 #' pmat <- make_pmatrix(Z, X)
-#' pairs <- nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
+#' pairs <- nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
 #' classic_Neyman(Y, Z, pairs)
 #' @export
 classic_Neyman <- function(Y, Z, pairs){
@@ -184,7 +184,7 @@ classic_Neyman <- function(Y, Z, pairs){
 #' off-diagonal elements (i, j) contain the probability the ith observation has
 #' Z = max{Z_i, Z_j} and the jth observation has Z = min{Z_i, Z_j}. We can create
 #' a p-matrix using the make_pmatrix function.
-#' @param xi a number in the range [0, 0.5], the cutoff related to the treatment
+#' @param xi a number in the range 0 to 0.5, the cutoff related to the treatment
 #' assignment probability caliper.
 #' @return I x 2 dataframe
 #' @examples
@@ -193,7 +193,7 @@ classic_Neyman <- function(Y, Z, pairs){
 #' Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 #' Y <- X + Z + rnorm(1000, 0, 0.5)
 #' pmat <- make_pmatrix(Z, X)
-#' pairs <- nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
+#' pairs <- nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
 #' biasCorrected_Neyman(Y, Z, pairs, pmat, xi = 0.1)
 #' @export
 biasCorrected_Neyman <- function(Y, Z, pairs, pmat, xi){
@@ -253,7 +253,7 @@ generate_data_dose <- function(N){
 #' off-diagonal elements (i, j) contain the probability the ith observation has
 #' Z = max{Z_i, Z_j} and the jth observation has Z = min{Z_i, Z_j}. We can create
 #' a p-matrix using the make_pmatrix function.
-#' @param xi a number in the range [0, 0.5], the cutoff related to the treatment
+#' @param xi a number in the range 0 to 0.5, the cutoff related to the treatment
 #' assignment probability caliper.
 #' @param Q an arbitrary I x L matrix, where L < I
 #' @return a 2I x 2I numeric matrix
@@ -263,8 +263,8 @@ generate_data_dose <- function(N){
 #' Z <- X + rnorm(1000, 0, (1+sqrt(abs(X))))
 #' Y <- X + Z + rnorm(1000, 0, 0.5)
 #' pmat <- make_pmatrix(Z, X)
-#' pairs <- nbp_caliper(Z, X, pmat, xi = 0.1, M = 10000)
-#' covAdj_variance(Y, Z, X, pairs, pmat, xi = 0.1)
+#' pairs <- nbp_Caliper(Z, X, pmat, xi = 0.1, M = 10000)
+#' covAdj_Variance(Y, Z, X, pairs, pmat, xi = 0.1)
 #' @export
 covAdj_Variance <- function(Y, Z, X, pairs, pmat, xi, Q){
   
